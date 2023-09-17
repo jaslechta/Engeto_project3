@@ -9,7 +9,7 @@ import csv
 from requests import get
 from bs4 import BeautifulSoup 
 import sys
-import urllib.request
+
 
 #if len(sys/argv) != 3:
 #        print("zadej dva argumenty")
@@ -26,26 +26,26 @@ def scrape_web_page(url):
     all_tr = soup.find_all("tr")   
     for tr in all_tr:
         try:
-            pomocna = tr.find('td', class_='cislo')
-            cislo = pomocna.find('a').string
-            url = pomocna.find('a', href= True)
-            data_url_obce = "https://volby.cz/pls/ps2017nss/"+url['href']
-            nazev = tr.find('td', class_="overflow_name").string
+            td = tr.find('td', class_='cislo')
+            code = td.find('a').string
+            url = td.find('a', href= True)
+            data_url_location = "https://volby.cz/pls/ps2017nss/"+url['href']
+            location = tr.find('td', class_="overflow_name").string
 
 
-            soup2 = get_page(data_url_obce)
+            soup2 = get_page(data_url_location)
             table_data2 = soup2.find_all("td", class_ ='cislo')
-            volici = table_data2[3].string
-            vydane_obalky = table_data2[4].string
-            platne_hlasy = table_data2[7].string
+            registred = table_data2[3].string
+            envelopes = table_data2[4].string
+            valid = table_data2[7].string
 
-            extracted_data[cislo] = {
-                'Kód obce' : cislo,
-                'Název obce': nazev,
-                'URL obce' : data_url_obce,
-                'Voliči v seznamu' : volici,
-                'Vydané obálky' : vydane_obalky,
-                'Platné hlasy' : platne_hlasy,
+            extracted_data[code] = {
+                'Kód obce' : code,
+                'Název obce': location,
+                'URL obce' : data_url_location,
+                'Voliči v seznamu' : registred,
+                'Vydané obálky' : envelopes,
+                'Platné hlasy' : valid,
             }
 
             table2 = soup2.find_all('table', class_='table')
@@ -53,17 +53,17 @@ def scrape_web_page(url):
             
             for tr in trs_2:
                 try:       
-                    strana = tr.find('td',class_ = "overflow_name").text
-                    strana_hlasy = tr.find('td', {"class" : "cislo", "headers" : "t1sa2 t1sb3"}).text
-                    extracted_data[cislo][strana] = strana_hlasy
+                    political_party = tr.find('td',class_ = "overflow_name").text
+                    votes = tr.find('td', {"class" : "cislo", "headers" : "t1sa2 t1sb3"}).text
+                    extracted_data[code][political_party] = votes
                 except AttributeError:
                    continue
 
             for tr in trs_2:
                 try:       
-                    strana = tr.find('td',class_ = "overflow_name").text
-                    strana_hlasy = tr.find('td', {"class" : "cislo", "headers" : "t2sa2 t2sb3"}).text
-                    extracted_data[cislo][strana] = strana_hlasy
+                    political_party = tr.find('td',class_ = "overflow_name").text
+                    votes = tr.find('td', {"class" : "cislo", "headers" : "t2sa2 t2sb3"}).text
+                    extracted_data[code][political_party] = votes
                 except AttributeError:
                     continue
     
@@ -73,36 +73,47 @@ def scrape_web_page(url):
     return extracted_data
 
 
-def header(url):
+def get_header(url):
     soup = get_page(url)
     try:
-        obec = soup.find('td', attrs= {'class': 'cislo', 'headers': 't1sa1 t1sb1'}).a
-        url_obce = "https://volby.cz/pls/ps2017nss/"+obec['href']
-        response = get(url_obce)
-        soup_2 = BeautifulSoup(response.content, 'html.parser')
-        strany = soup_2.find_all('tr')
-        zahlavi = ["Kód obce", "Název obce", "Voliči v seznamu", "Vydané obálky", "Platné hlasy"]
+        location = soup.find('td', attrs= {'class': 'cislo', 'headers': 't1sa1 t1sb1'}).a
+        url_location = "https://volby.cz/pls/ps2017nss/"+location['href']
+        soup_2 = get_page(url_location)
+        political_parties = soup_2.find_all('tr')
+        header = ["Kód obce", "Název obce", "Voliči v seznamu", "Vydané obálky", "Platné hlasy"]
     except AttributeError:
         print("Nastala chyba při stahování nebo řazení dat,zkontrolujte správnost adresy pro stažení. Ukončuji program.")
         quit()
     
-    for i in strany:
+    for i in political_parties:
         try:
-            strana = i.find('td', class_='overflow_name').string
-            zahlavi.append(strana)
+            party = i.find('td', class_='overflow_name').string
+            header.append(party)
         except AttributeError:
             continue
-    return list(zahlavi)
+    return list(header)
 
 
 def write_to_csv(extracted_data,output_file):
     with open(output_file, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        zahlavi = header(url)
-        writer.writerow(zahlavi)
-        for obec_data in extracted_data.values():
-            obec_data_filtered = {key: obec_data[key] for key in zahlavi}
+        header = get_header(url)
+        writer.writerow(header)
+        for location_data in extracted_data.values():
+            obec_data_filtered = {key: location_data[key] for key in header}
             writer.writerow(obec_data_filtered.values())
+
+#def main(url,file):
+#    try:
+#        print(f"Data processing")
+#    except AttributeError:
+#        print("Unexpected error")
+#        quit()
+    
+#    extracted_data = scrape_web_page(url)
+#    print(f"Resuls saved as: '{file}'")
+#    output_file = file + '.csv'
+#    write_to_csv(extracted_data,output_file)
 
 if __name__ == '__main__':
     url = 'https://volby.cz/pls/ps2017nss/ps32?xjazyk=CZ&xkraj=12&xnumnuts=7103'
