@@ -53,7 +53,8 @@ def scrape_web_page(url):
             }
 
             table2 = soup2.find_all('table', class_='table')
-            trs_2 = table2[1].find_all('tr') + table2[2].find_all('tr')
+            trs_2 = table2[1].find_all('tr') 
+            trs_3 = table2[2].find_all('tr')
             
             for tr in trs_2:
                 try:       
@@ -63,7 +64,7 @@ def scrape_web_page(url):
                 except AttributeError:
                    continue
 
-            for tr in trs_2:
+            for tr in trs_3:
                 try:       
                     political_party = tr.find('td',class_ = "overflow_name").text
                     votes = tr.find('td', {"class" : "cislo", "headers" : "t2sa2 t2sb3"}).text
