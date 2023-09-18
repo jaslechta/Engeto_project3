@@ -91,7 +91,7 @@ def get_header(url):
         political_parties = soup_2.find_all('tr')
         header = ["Kód obce", "Název obce", "Voliči v seznamu", "Vydané obálky", "Platné hlasy"]
     except AttributeError:
-        print("Nastala chyba při stahování nebo řazení dat,zkontrolujte správnost adresy pro stažení. Ukončuji program.")
+        print("There was an error in downloading or processing data, check the addresses for download. Terminating the program.")
         quit()
             
     for i in political_parties:
